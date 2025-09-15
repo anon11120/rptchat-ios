@@ -21,7 +21,7 @@ jobs:
 
     - name: 📦 Install Dependencies
       run: |
-        npm install
+        npm install   # 🔹 заменили npm ci на npm install
         cd ios && pod install && cd ..
 
     - name: 🔑 Configure API
@@ -80,6 +80,7 @@ jobs:
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
 
 
