@@ -17,12 +17,24 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        # 🔹 cache убран, потому что нет lock-файла
 
     - name: 📦 Install Dependencies (safe)
-      run: |
-        echo "No package.json found, skipping npm install"
+      run: echo "No package.json found, skipping npm install"
       continue-on-error: true
+
+    - name: 🔑 Configure API
+      run: |
+        sed -i '' "s/YOUR_API_ID/${{ secrets.TELEGRAM_API_ID }}/g" src/api/TelegramAPI.js || echo "API config skipped"
+        sed -i '' "s/YOUR_API_HASH/${{ secrets.TELEGRAM_API_HASH }}/g" src/api/TelegramAPI.js || echo "API config skipped"
+
+    - name: 🔐 Setup iOS Signing
+      run: |
+        # Декодируем сертификат и профиль
+        echo "${{ secrets.IOS_CERTIFICATE }}" | base64 --decode > certificate.p12
+        echo "${{ secrets.MOBILEPROVISION }}" | base64 --decode > profile.mobileprovision
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+        security import certificate.p12 -P "${{ secrets.IOS_CERT_PASSWORD }}" -A
 
     - name: 🏗️ Build iOS
       run: |
@@ -39,35 +51,14 @@ jobs:
                    -archivePath RPTChat.xcarchive \
                    -exportPath ./build \
                    -exportOptionsPlist ios/ExportOptions.plist
-      continue-on-error: true
 
     - name: ⬆️ Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: RPTChat-iOS-Build
-        path: |
-          ./build/*.ipa
-          RPTChat.xcarchive
+        path: ./build/*.ipa
         retention-days: 30
 
-    - name: 🚀 Create Release
-      if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v1.0.${{ github.run_number }}
-        name: RPTChat iOS v1.0.${{ github.run_number }}
-        body: |
-          🎉 **RPTChat iOS Auto-Build**
-          
-          ### 📥 Installation:
-          1. Download RPTChat.ipa
-          2. Sign with any tool
-          3. Install on device
-        files: ./build/*.ipa
-        draft: false
-        prerelease: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 
