@@ -1,0 +1,82 @@
+name: 🍎 Build RPTChat iOS
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+      
+    - name: 🔧 Setup Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: 📦 Install Dependencies
+      run: |
+        npm ci
+        cd ios && pod install && cd ..
+        
+    - name: 🔑 Configure API
+      run: |
+        sed -i '' "s/YOUR_API_ID/${{ secrets.TELEGRAM_API_ID }}/g" src/api/TelegramAPI.js
+        sed -i '' "s/YOUR_API_HASH/${{ secrets.TELEGRAM_API_HASH }}/g" src/api/TelegramAPI.js
+        
+    - name: 🏗️ Build iOS
+      run: |
+        xcodebuild -workspace ios/RPTChatIOS.xcworkspace \
+                   -scheme RPTChatIOS \
+                   -configuration Release \
+                   -destination generic/platform=iOS \
+                   -archivePath RPTChat.xcarchive \
+                   archive
+                   
+    - name: 📱 Export IPA
+      run: |
+        xcodebuild -exportArchive \
+                   -archivePath RPTChat.xcarchive \
+                   -exportPath ./build \
+                   -exportOptionsPlist ios/ExportOptions.plist
+      continue-on-error: true
+      
+    - name: ⬆️ Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: RPTChat-iOS-Build
+        path: |
+          ./build/*.ipa
+          RPTChat.xcarchive
+        retention-days: 30
+        
+    - name: 🚀 Create Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        name: RPTChat iOS v1.0.${{ github.run_number }}
+        body: |
+          🎉 **RPTChat iOS Auto-Build**
+          
+          ### 📥 Installation:
+          1. Download RPTChat.ipa
+          2. Sign with any tool
+          3. Install on device
+          
+          ### ✨ Features:
+          - 👻 Ghost Mode
+          - 🛡️ Anti-Recall
+          - 📝 Message History
+          
+          ⚠️ **Use on test account only!**
+        files: ./build/*.ipa
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
