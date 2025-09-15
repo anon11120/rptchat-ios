@@ -3,32 +3,32 @@ name: 🍎 Build RPTChat iOS
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # ✅ позволяет запуск вручную
+  workflow_dispatch:  # ручной запуск
 
 jobs:
   build:
     runs-on: macos-latest
-    
+
     steps:
     - name: 📥 Checkout
       uses: actions/checkout@v4
-      
+
     - name: 🔧 Setup Node
       uses: actions/setup-node@v3
       with:
         node-version: '18'
         cache: 'npm'
-        
+
     - name: 📦 Install Dependencies
       run: |
-        npm ci
+        npm install
         cd ios && pod install && cd ..
-        
+
     - name: 🔑 Configure API
       run: |
         sed -i '' "s/YOUR_API_ID/${{ secrets.TELEGRAM_API_ID }}/g" src/api/TelegramAPI.js
         sed -i '' "s/YOUR_API_HASH/${{ secrets.TELEGRAM_API_HASH }}/g" src/api/TelegramAPI.js
-        
+
     - name: 🏗️ Build iOS
       run: |
         xcodebuild -workspace ios/RPTChatIOS.xcworkspace \
@@ -37,7 +37,7 @@ jobs:
                    -destination generic/platform=iOS \
                    -archivePath RPTChat.xcarchive \
                    archive
-                   
+
     - name: 📱 Export IPA
       run: |
         xcodebuild -exportArchive \
@@ -45,7 +45,7 @@ jobs:
                    -exportPath ./build \
                    -exportOptionsPlist ios/ExportOptions.plist
       continue-on-error: true
-      
+
     - name: ⬆️ Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -54,7 +54,7 @@ jobs:
           ./build/*.ipa
           RPTChat.xcarchive
         retention-days: 30
-        
+
     - name: 🚀 Create Release
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
@@ -80,5 +80,6 @@ jobs:
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
 
