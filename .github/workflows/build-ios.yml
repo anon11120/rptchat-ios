@@ -3,7 +3,7 @@ name: 🍎 Build RPTChat iOS
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # ✅ ручной запуск
+  workflow_dispatch:  # ✅ позволяет запуск вручную
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
       continue-on-error: true
       
     - name: ⬆️ Upload Artifacts
-      uses: actions/upload-artifact@v4  # ✅ обновлено на v4
+      uses: actions/upload-artifact@v4
       with:
         name: RPTChat-iOS-Build
         path: |
@@ -80,4 +80,5 @@ jobs:
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
